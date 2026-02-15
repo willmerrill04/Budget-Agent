@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import type { Transaction } from '../types';
 import { parseCSV } from '../utils/csv';
+import { parsePDF } from '../utils/pdf';
 
 interface Props {
   onImport: (transactions: Transaction[]) => void;
@@ -11,31 +12,61 @@ export default function CSVImport({ onImport, transactionCount }: Props) {
   const [dragOver, setDragOver] = useState(false);
   const [lastImportCount, setLastImportCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const dragCounterRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = useCallback((file: File) => {
-    setError(null);
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      setError('Please drop a CSV file (.csv extension required).');
+  const finishImport = useCallback((transactions: Transaction[]) => {
+    setLoading(false);
+    if (transactions.length === 0) {
+      setError('No transactions found. Check that your file has date, description, and amount columns.');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      const transactions = parseCSV(text);
-      if (transactions.length === 0) {
-        setError('No transactions found. Check that your CSV has date, description, and amount columns.');
-        return;
-      }
-      setLastImportCount(transactions.length);
-      onImport(transactions);
-    };
-    reader.onerror = () => {
-      setError('Failed to read file. Please try again.');
-    };
-    reader.readAsText(file);
+    setLastImportCount(transactions.length);
+    onImport(transactions);
   }, [onImport]);
+
+  const handleFile = useCallback((file: File) => {
+    setError(null);
+    const name = file.name.toLowerCase();
+    const isCSV = name.endsWith('.csv');
+    const isPDF = name.endsWith('.pdf');
+
+    if (!isCSV && !isPDF) {
+      setError('Unsupported file type. Please use a CSV or PDF file.');
+      return;
+    }
+
+    if (isCSV) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        finishImport(parseCSV(text));
+      };
+      reader.onerror = () => {
+        setError('Failed to read file. Please try again.');
+      };
+      reader.readAsText(file);
+    } else {
+      setLoading(true);
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const buffer = e.target?.result as ArrayBuffer;
+          const transactions = await parsePDF(buffer);
+          finishImport(transactions);
+        } catch {
+          setLoading(false);
+          setError('Failed to parse PDF. Make sure it contains a table with transaction data.');
+        }
+      };
+      reader.onerror = () => {
+        setLoading(false);
+        setError('Failed to read file. Please try again.');
+      };
+      reader.readAsArrayBuffer(file);
+    }
+  }, [finishImport]);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -88,15 +119,20 @@ export default function CSVImport({ onImport, transactionCount }: Props) {
       >
         <div className="text-5xl mb-4">📂</div>
         <p className="text-lg font-semibold text-gray-700">
-          Drag & drop your bank CSV here
+          Drag & drop your bank statement here
         </p>
         <p className="text-sm text-gray-500 mt-2">
-          or click to browse files
+          Supports CSV and PDF files — or click to browse
         </p>
+        {loading && (
+          <p className="text-sm text-blue-600 mt-3 font-medium">
+            Parsing PDF...
+          </p>
+        )}
         <input
           ref={fileInputRef}
           type="file"
-          accept=".csv"
+          accept=".csv,.pdf"
           onChange={handleFileInput}
           className="hidden"
         />
@@ -121,8 +157,9 @@ export default function CSVImport({ onImport, transactionCount }: Props) {
       )}
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
-        <p className="font-semibold mb-2">Supported CSV format</p>
-        <p>Your CSV should have columns for date, description, and amount. The importer auto-detects common column names (Date, Description, Amount, Memo, Debit, etc.).</p>
+        <p className="font-semibold mb-2">Supported formats</p>
+        <p><strong>CSV:</strong> Should have columns for date, description, and amount. Column names are auto-detected.</p>
+        <p className="mt-1"><strong>PDF:</strong> Bank statements with tabular transaction data. The importer extracts the table and auto-detects columns.</p>
         <p className="mt-2">Negative amounts are treated as expenses, positive as income.</p>
       </div>
     </div>
