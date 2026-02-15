@@ -116,7 +116,7 @@ export default function SpendingByCategory({ transactions }: Props) {
                       <Cell key={entry.name} fill={getCategoryColor(entry.name)} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+                  <Tooltip formatter={(value: number | undefined) => `$${(value ?? 0).toFixed(2)}`} />
                 </PieChart>
               </ResponsiveContainer>
               <p className="text-center text-sm text-gray-500 mt-2">
@@ -158,7 +158,7 @@ export default function SpendingByCategory({ transactions }: Props) {
               <BarChart data={categoryData} layout="vertical" margin={{ left: 100 }}>
                 <XAxis type="number" tickFormatter={(v) => `$${v}`} />
                 <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 12 }} />
-                <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+                <Tooltip formatter={(value: number | undefined) => `$${(value ?? 0).toFixed(2)}`} />
                 <Bar dataKey="value" radius={[0, 4, 4, 0]}>
                   {categoryData.map((entry) => (
                     <Cell key={entry.name} fill={getCategoryColor(entry.name)} />

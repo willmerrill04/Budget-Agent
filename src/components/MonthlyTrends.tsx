@@ -99,7 +99,7 @@ export default function MonthlyTrends({ transactions }: Props) {
           <BarChart data={monthlyData}>
             <XAxis dataKey="month" tick={{ fontSize: 11 }} />
             <YAxis tickFormatter={(v) => `$${v}`} />
-            <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+            <Tooltip formatter={(value: number | undefined) => `$${(value ?? 0).toFixed(2)}`} />
             <Bar dataKey="expenses" radius={[4, 4, 0, 0]}>
               {monthlyData.map((entry) => (
                 <Cell key={entry.month} fill={entry.month === lastMonth ? '#ef4444' : '#fca5a5'} />
@@ -115,7 +115,7 @@ export default function MonthlyTrends({ transactions }: Props) {
           <BarChart data={monthlyData}>
             <XAxis dataKey="month" tick={{ fontSize: 11 }} />
             <YAxis tickFormatter={(v) => `$${v}`} />
-            <Tooltip formatter={(value: number) => `$${value.toFixed(2)}`} />
+            <Tooltip formatter={(value: number | undefined) => `$${(value ?? 0).toFixed(2)}`} />
             <Bar dataKey="income" radius={[4, 4, 0, 0]}>
               {monthlyData.map((entry) => (
                 <Cell key={entry.month} fill={entry.month === lastMonth ? '#22c55e' : '#86efac'} />
@@ -131,7 +131,7 @@ export default function MonthlyTrends({ transactions }: Props) {
           <BarChart data={monthlyData}>
             <XAxis dataKey="month" tick={{ fontSize: 11 }} />
             <YAxis tickFormatter={(v) => `${v}%`} />
-            <Tooltip formatter={(value: number) => `${value}%`} />
+            <Tooltip formatter={(value: number | undefined) => `${value ?? 0}%`} />
             <Bar dataKey="savingsRate" radius={[4, 4, 0, 0]}>
               {monthlyData.map((entry) => (
                 <Cell key={entry.month} fill={entry.month === lastMonth ? '#3b82f6' : '#93c5fd'} />
