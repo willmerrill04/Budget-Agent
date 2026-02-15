@@ -20,10 +20,27 @@ function detectColumns(headers: string[]): ColumnMapping | null {
   const descPatterns = ['description', 'memo', 'merchant', 'name', 'payee', 'transaction', 'details', 'narrative'];
   const amountPatterns = ['amount', 'debit', 'value', 'sum', 'total', 'charge'];
 
+  // Assign columns in priority order: date first, then amount, then description.
+  // Each column can only be assigned once.
+  const used = new Set<number>();
+
   for (let i = 0; i < lower.length; i++) {
-    if (dateCol === -1 && datePatterns.some(p => lower[i].includes(p))) dateCol = i;
-    if (descCol === -1 && descPatterns.some(p => lower[i].includes(p))) descCol = i;
-    if (amountCol === -1 && amountPatterns.some(p => lower[i].includes(p))) amountCol = i;
+    if (dateCol === -1 && datePatterns.some(p => lower[i].includes(p))) {
+      dateCol = i;
+      used.add(i);
+    }
+  }
+  for (let i = 0; i < lower.length; i++) {
+    if (!used.has(i) && amountCol === -1 && amountPatterns.some(p => lower[i].includes(p))) {
+      amountCol = i;
+      used.add(i);
+    }
+  }
+  for (let i = 0; i < lower.length; i++) {
+    if (!used.has(i) && descCol === -1 && descPatterns.some(p => lower[i].includes(p))) {
+      descCol = i;
+      used.add(i);
+    }
   }
 
   if (dateCol === -1 || descCol === -1 || amountCol === -1) {
